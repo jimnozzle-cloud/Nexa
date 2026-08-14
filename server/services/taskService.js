@@ -1,7 +1,7 @@
-import db from "../database/database.js";
+import pool from "../database/database.js";
 
-export function getTasks() {
-  const statement = db.prepare(`
+export async function getTasks() {
+  const result = await pool.query(`
     SELECT
       id,
       title,
@@ -12,56 +12,57 @@ export function getTasks() {
     ORDER BY id DESC
   `);
 
-  return statement.all();
+  return result.rows;
 }
 
-export function createTask({
+export async function createTask({
   title,
   description,
 }) {
-  const statement = db.prepare(`
-    INSERT INTO tasks (
-      title,
-      description
-    )
-    VALUES (?, ?)
-  `);
-
-  const result = statement.run(
-    title,
-    description
+  const result = await pool.query(
+    `
+      INSERT INTO tasks (
+        title,
+        description
+      )
+      VALUES ($1, $2)
+      RETURNING
+        id,
+        title,
+        description,
+        status,
+        created_at
+    `,
+    [title, description]
   );
 
-  return {
-    id: Number(result.lastInsertRowid),
-    title,
-    description,
-    status: "Todo",
-  };
+  return result.rows[0];
 }
 
-export function deleteTask(id) {
-  const statement = db.prepare(`
-    DELETE FROM tasks
-    WHERE id = ?
-  `);
-
-  const result = statement.run(id);
-
-  return result.changes > 0;
-}
-
-export function updateTaskStatus(id, status) {
-  const statement = db.prepare(`
-    UPDATE tasks
-    SET status = ?
-    WHERE id = ?
-  `);
-
-  const result = statement.run(
-    status,
-    id
+export async function deleteTask(id) {
+  const result = await pool.query(
+    `
+      DELETE FROM tasks
+      WHERE id = $1
+    `,
+    [id]
   );
 
-  return result.changes > 0;
+  return result.rowCount > 0;
+}
+
+export async function updateTaskStatus(
+  id,
+  status
+) {
+  const result = await pool.query(
+    `
+      UPDATE tasks
+      SET status = $1
+      WHERE id = $2
+    `,
+    [status, id]
+  );
+
+  return result.rowCount > 0;
 }

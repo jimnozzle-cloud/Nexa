@@ -1,25 +1,9 @@
-import { DatabaseSync } from "node:sqlite";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import pg from "pg";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const { Pool } = pg;
 
-const databasePath = path.join(
-  __dirname,
-  "nexa.db"
-);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-const db = new DatabaseSync(databasePath);
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS tasks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    description TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'Todo',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
-
-export default db;
+export default pool;
